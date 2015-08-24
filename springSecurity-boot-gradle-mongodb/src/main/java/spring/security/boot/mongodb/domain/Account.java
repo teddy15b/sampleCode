@@ -1,21 +1,33 @@
 package spring.security.boot.mongodb.domain;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author teddy
  *
  */
 @Document(collection = "users")
-public class Account {
+public class Account implements UserDetails{
 
+  private static final long serialVersionUID = 1L;
   public static final String USERNAME = "username";
   public static final String PASSWORD = "password";
   public static final String ROLES = "roles";
-  
+
+  @JsonIgnore
+  @JsonProperty("_id")
+  private String id;
   private String username;
   private String password;
   private boolean accountNonExpired;
@@ -25,6 +37,13 @@ public class Account {
 
   private List<String> roles;
 
+  public String getId() {
+    return id;
+  }
+  
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public String getUsername() {
     return username;
@@ -95,4 +114,13 @@ public class Account {
         .toString();
   }
 
+  @JsonIgnore
+  @Override
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    Collection<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
+    this.roles.forEach(role -> {
+      authorities.add(new SimpleGrantedAuthority(role.toString()));
+    });
+    return authorities;
+  }
 }
