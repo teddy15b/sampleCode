@@ -12,6 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author teddy
@@ -20,10 +21,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Document(collection = "users")
 public class Account implements UserDetails, CredentialsContainer {
   private static final long serialVersionUID = -2486911392546018078L;
+
   public static final String USERNAME = "username";
   public static final String PASSWORD = "password";
   public static final String ROLES = "roles";
 
+  @JsonIgnore
+  @JsonProperty("_id")
+  private String id;
   private String username;
   private String password;
   private boolean accountNonExpired;
@@ -32,6 +37,14 @@ public class Account implements UserDetails, CredentialsContainer {
   private boolean enabled;
 
   private List<String> roles;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public String getUsername() {
     return username;
@@ -102,7 +115,7 @@ public class Account implements UserDetails, CredentialsContainer {
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     Collection<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
-    roles.forEach(role -> {
+    this.roles.forEach(role -> {
       authorities.add(new SimpleGrantedAuthority(role.toString()));
     });
     return authorities;

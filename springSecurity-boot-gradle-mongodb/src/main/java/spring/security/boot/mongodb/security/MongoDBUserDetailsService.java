@@ -1,8 +1,15 @@
 package spring.security.boot.mongodb.security;
 
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Resource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.GrantedAuthority;
@@ -26,6 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Transactional
 public class MongoDBUserDetailsService implements UserDetailsManager, GroupManager {
 
+  public static final Logger logger = LoggerFactory.getLogger(MongoDBUserDetailsService.class);
+
   @Autowired
   private AccountRepository accountRepo;
 
@@ -37,9 +46,9 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
     Optional<UserDetails> loadedUser;
     try {
       Account account = accountRepo.findByUsername(username);
-      System.out.println(account.toString());
       loadedUser =
-          Optional.of(new User(account.getUsername(), account.getPassword(), account.getAuthorities() ));
+          Optional.of(new User(account.getUsername(), account.getPassword(), account
+              .getAuthorities()));
       if (!loadedUser.isPresent()) {
         throw new InternalAuthenticationServiceException(
             "UserDetailsService returned null, which is an interface contract violation");
@@ -114,19 +123,41 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
 
   @Override
   public void createUser(UserDetails user) {
-    // TODO Auto-generated method stub
-
+    if (!userExists(user.getUsername())) {
+      accountRepo.insert((Account) user);
+      logger.info("account '{}' has created.", user.getUsername());
+    } else
+      logger.error("account '{}' has existed!");
   }
 
   @Override
   public void updateUser(UserDetails user) {
-    // TODO Auto-generated method stub
-
+    if (userExists(user.getUsername())) {
+      Account account = accountRepo.findByUsername(user.getUsername());
+      account.setUsername(user.getUsername());
+      account.setPassword(user.getPassword());
+      account.setAccountNonExpired(user.isAccountNonExpired());
+      account.setAccountNonLocked(user.isAccountNonLocked());
+      account.setCredentialsNonExpired(user.isCredentialsNonExpired());
+      account.setEnabled(user.isEnabled());
+      List<String> roles = new ArrayList<String>();
+      user.getAuthorities().forEach(authority -> {
+        roles.add(authority.getAuthority());
+      });
+      account.setRoles(roles);
+      accountRepo.save(account);
+      logger.info("account '{}' has updated.", user.getUsername());
+    } else
+      logger.error("account '{}' has not existed!");
   }
 
   @Override
   public void deleteUser(String username) {
-    // TODO Auto-generated method stub
+    if (userExists(username)) {
+      accountRepo.deleteByUsername(username);
+      logger.info("account '{}' has deleted", username);
+    } else
+      logger.error("account '{}' has not existed!", username);
   }
 
   @Override
@@ -137,9 +168,10 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
 
   @Override
   public boolean userExists(String username) {
-    // TODO Auto-generated method stub
-    return false;
+    if (Optional.ofNullable(accountRepo.findByUsername(username)).isPresent())
+      return true;
+    else
+      return false;
   }
-
 
 }
