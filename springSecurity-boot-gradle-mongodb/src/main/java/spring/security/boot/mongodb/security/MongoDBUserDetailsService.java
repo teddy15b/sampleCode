@@ -1,17 +1,11 @@
 package spring.security.boot.mongodb.security;
 
-
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-
 import javax.annotation.Resource;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,10 +13,8 @@ import org.springframework.security.provisioning.GroupManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import spring.security.boot.mongodb.domain.Account;
 import spring.security.boot.mongodb.repo.AccountRepository;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -40,14 +32,6 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
   @Resource(name = "objectMapper")
   private ObjectMapper om;
 
-  private Collection<GrantedAuthority> createAuthority(List<String> roles) {
-    Collection<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
-    roles.forEach(role -> {
-      authorities.add(new SimpleGrantedAuthority(role.toString()));
-    });
-    return authorities;
-  }
-
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     Optional<UserDetails> loadedUser;
@@ -55,8 +39,7 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
       Account account = accountRepo.findByUsername(username);
       System.out.println(account.toString());
       loadedUser =
-          Optional.of(new User(account.getUsername(), account.getPassword(),
-              createAuthority(account.getRoles())));
+          Optional.of(new User(account.getUsername(), account.getPassword(), account.getAuthorities() ));
       if (!loadedUser.isPresent()) {
         throw new InternalAuthenticationServiceException(
             "UserDetailsService returned null, which is an interface contract violation");
@@ -144,7 +127,6 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
   @Override
   public void deleteUser(String username) {
     // TODO Auto-generated method stub
-
   }
 
   @Override
