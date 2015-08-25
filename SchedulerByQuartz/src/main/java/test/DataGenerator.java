@@ -9,11 +9,11 @@ public class DataGenerator implements Job {
 	public void execute(JobExecutionContext context)
 			throws JobExecutionException {
 		doJob();
+		System.out.println(context.getMergedJobDataMap().get("test"));
 	}
 
 	private void doJob() {
-	  System.out.println("fire!!");
-
+	  System.out.println("fire!!");	  
 	}
 	
 

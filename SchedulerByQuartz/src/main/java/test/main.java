@@ -27,6 +27,8 @@ public class main {
       JobDetail job = newJob(DataGenerator.class)
                           .withIdentity(JOB_ID, GROUP_ID)
                           .build();
+      
+      job.getJobDataMap().put("test", "123");
 
       Trigger trigger = newTrigger()
                           .withIdentity(TRIGGER_ID, GROUP_ID)
@@ -35,6 +37,8 @@ public class main {
                           .build();
 
       scheduler.scheduleJob(job, trigger);
+      
+
 
 
   } catch (SchedulerException e) {
