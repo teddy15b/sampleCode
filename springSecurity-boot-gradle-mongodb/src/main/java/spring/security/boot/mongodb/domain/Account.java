@@ -38,6 +38,7 @@ public class Account implements UserDetails, CredentialsContainer {
 
   private List<String> roles;
 
+  @JsonIgnore  
   public String getId() {
     return id;
   }

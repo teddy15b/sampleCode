@@ -1,6 +1,3 @@
-/**
- * 
- */
 package spring.security.boot.mongodb.config;
 
 import org.springframework.context.annotation.Bean;

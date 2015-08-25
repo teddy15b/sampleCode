@@ -1,27 +1,33 @@
 package spring.security.boot.mongodb.security;
 
-
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.provisioning.GroupManager;
 import org.springframework.security.provisioning.UserDetailsManager;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import spring.security.boot.mongodb.domain.Account;
+import spring.security.boot.mongodb.domain.PasswordChanging;
 import spring.security.boot.mongodb.repo.AccountRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -47,8 +53,9 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
     try {
       Account account = accountRepo.findByUsername(username);
       loadedUser =
-          Optional.of(new User(account.getUsername(), account.getPassword(), account
-              .getAuthorities()));
+          Optional.of(new User(account.getUsername(), account.getPassword(), 
+              account.isEnabled(), account.isAccountNonExpired(), account.isCredentialsNonExpired(), 
+              account.isAccountNonLocked(), account.getAuthorities()));
       if (!loadedUser.isPresent()) {
         throw new InternalAuthenticationServiceException(
             "UserDetailsService returned null, which is an interface contract violation");
@@ -153,17 +160,55 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
 
   @Override
   public void deleteUser(String username) {
-    if (userExists(username)) {
+    if(userExists(username)) {
       accountRepo.deleteByUsername(username);
-      logger.info("account '{}' has deleted", username);
-    } else
+      logger.info("account '{}' has deleted.", username);
+    }
+    else
       logger.error("account '{}' has not existed!", username);
+  }
+
+  public String changePassword(HttpServletRequest request, String username, PasswordChanging passwordChanging) {
+    Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
+    if(currentUser.getName().equals(username)) {
+      if(accountRepo.findByUsername(username).getPassword().equals(passwordChanging.getOldPassword())) {
+        if(passwordChanging.getNewPassword().equals(passwordChanging.getConfirmNewPassword())) {
+          changePassword(passwordChanging.getOldPassword(), passwordChanging.getNewPassword());
+          new SecurityContextLogoutHandler().logout(request, null, null);
+          return "password has changed.";
+        }
+        else
+          return "new password and confirm new password are not match!";
+      }
+      return "current password is incorrect!";
+    }
+    else
+      return "cannot access other accounts!";
   }
 
   @Override
   public void changePassword(String oldPassword, String newPassword) {
-    // TODO Auto-generated method stub
+    Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
+    String username = currentUser.getName();
 
+    Account account = accountRepo.findByUsername(username);
+    account.setPassword(newPassword);    
+    accountRepo.save(account);
+    logger.info("account '{}' password has changed.", account.getUsername());
+    
+    // if u want to keep login, update SecurityContext 
+     // SecurityContextHolder.getContext().setAuthentication(createNewAuthentication(currentUser, newPassword));
+  }
+  
+  protected Authentication createNewAuthentication(Authentication currentUser,
+      String newPassword) {
+    UserDetails user = loadUserByUsername(currentUser.getName());
+
+    UsernamePasswordAuthenticationToken newAuthentication =
+        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+    newAuthentication.setDetails(currentUser.getDetails());
+
+    return newAuthentication;
   }
 
   @Override
