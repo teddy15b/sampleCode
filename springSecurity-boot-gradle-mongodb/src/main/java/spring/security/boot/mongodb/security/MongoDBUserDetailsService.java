@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+
 import javax.annotation.Resource;
 
 import org.slf4j.Logger;
@@ -20,8 +21,10 @@ import org.springframework.security.provisioning.GroupManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import spring.security.boot.mongodb.domain.Account;
 import spring.security.boot.mongodb.repo.AccountRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -134,21 +137,25 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
   public void updateUser(UserDetails user) {
     if (userExists(user.getUsername())) {
       Account account = accountRepo.findByUsername(user.getUsername());
-      account.setUsername(user.getUsername());
-      account.setPassword(user.getPassword());
-      account.setAccountNonExpired(user.isAccountNonExpired());
-      account.setAccountNonLocked(user.isAccountNonLocked());
-      account.setCredentialsNonExpired(user.isCredentialsNonExpired());
-      account.setEnabled(user.isEnabled());
-      List<String> roles = new ArrayList<String>();
-      user.getAuthorities().forEach(authority -> {
-        roles.add(authority.getAuthority());
-      });
-      account.setRoles(roles);
-      accountRepo.save(account);
+      try {
+        account.setUsername(user.getUsername());
+        account.setPassword(user.getPassword());
+        account.setAccountNonExpired(user.isAccountNonExpired());
+        account.setAccountNonLocked(user.isAccountNonLocked());
+        account.setCredentialsNonExpired(user.isCredentialsNonExpired());
+        account.setEnabled(user.isEnabled());
+        List<String> roles = new ArrayList<String>();
+        user.getAuthorities().forEach(authority -> {
+          roles.add(authority.getAuthority());
+        });
+        account.setRoles(roles);
+        accountRepo.save(account);
+      } catch (Exception e) {
+        logger.error("set account password failed!");
+      }
       logger.info("account '{}' has updated.", user.getUsername());
     } else
-      logger.error("account '{}' has not existed!");
+      logger.error("account '{}' has not existed!", user.getUsername());
   }
 
   @Override
