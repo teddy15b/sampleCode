@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,6 +29,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Account implements UserDetails, CredentialsContainer {
   public static final Logger logger = LoggerFactory.getLogger(Account.class);
   private static final long serialVersionUID = -2486911392546018078L;
+  private static String sKey = "1234567890abcdef";
+  
   @JsonIgnore
   @JsonProperty("_id")
   private String id;
@@ -38,9 +41,7 @@ public class Account implements UserDetails, CredentialsContainer {
   private boolean credentialsNonExpired;
   private boolean enabled;
   private List<String> roles;
- 
-  @JsonIgnore
-  private String sKey = "1234567890abcdef";
+  
   
   public Account() {}
 

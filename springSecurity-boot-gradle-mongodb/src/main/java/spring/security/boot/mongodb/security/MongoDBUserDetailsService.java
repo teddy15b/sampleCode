@@ -53,9 +53,9 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
     try {
       Account account = accountRepo.findByUsername(username);
       loadedUser =
-          Optional.of(new User(account.getUsername(), account.getPassword(), 
-              account.isEnabled(), account.isAccountNonExpired(), account.isCredentialsNonExpired(), 
-              account.isAccountNonLocked(), account.getAuthorities()));
+          Optional.of(new User(account.getUsername(), account.getPassword(), account.isEnabled(),
+              account.isAccountNonExpired(), account.isCredentialsNonExpired(), account
+                  .isAccountNonLocked(), account.getAuthorities()));
       if (!loadedUser.isPresent()) {
         throw new InternalAuthenticationServiceException(
             "UserDetailsService returned null, which is an interface contract violation");
@@ -164,29 +164,28 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
 
   @Override
   public void deleteUser(String username) {
-    if(userExists(username)) {
+    if (userExists(username)) {
       accountRepo.deleteByUsername(username);
       logger.info("account '{}' has deleted.", username);
-    }
-    else
+    } else
       logger.error("account '{}' has not existed!", username);
   }
 
-  public String changePassword(HttpServletRequest request, String username, PasswordChanging passwordChanging) {
+  public String changePassword(HttpServletRequest request, String username,
+      PasswordChanging passwordChanging) {
     Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
-    if(currentUser.getName().equals(username)) {
-      if(accountRepo.findByUsername(username).getPassword().equals(passwordChanging.getOldPassword())) {
-        if(passwordChanging.getNewPassword().equals(passwordChanging.getConfirmNewPassword())) {
+    if (currentUser.getName().equals(username)) {
+      if (accountRepo.findByUsername(username).getPassword()
+          .equals(passwordChanging.getOldPassword())) {
+        if (passwordChanging.getNewPassword().equals(passwordChanging.getConfirmNewPassword())) {
           changePassword(passwordChanging.getOldPassword(), passwordChanging.getNewPassword());
           new SecurityContextLogoutHandler().logout(request, null, null);
           return "password has changed.";
-        }
-        else
+        } else
           return "new password and confirm new password are not match!";
       }
       return "current password is incorrect!";
-    }
-    else
+    } else
       return "cannot access other accounts!";
   }
 
@@ -196,16 +195,20 @@ public class MongoDBUserDetailsService implements UserDetailsManager, GroupManag
     String username = currentUser.getName();
 
     Account account = accountRepo.findByUsername(username);
-    account.setPassword(newPassword);    
-    accountRepo.save(account);
-    logger.info("account '{}' password has changed.", account.getUsername());
-    
-    // if u want to keep login, update SecurityContext 
-     // SecurityContextHolder.getContext().setAuthentication(createNewAuthentication(currentUser, newPassword));
+    try {
+      account.setPassword(newPassword);
+      accountRepo.save(account);
+      logger.info("account '{}' password has changed.", account.getUsername());
+    } catch (Exception e) {
+      logger.error("set account password failed!");
+    }
+
+    // if u want to keep login, update SecurityContext
+    // SecurityContextHolder.getContext().setAuthentication(createNewAuthentication(currentUser,
+    // newPassword));
   }
-  
-  protected Authentication createNewAuthentication(Authentication currentUser,
-      String newPassword) {
+
+  protected Authentication createNewAuthentication(Authentication currentUser, String newPassword) {
     UserDetails user = loadUserByUsername(currentUser.getName());
 
     UsernamePasswordAuthenticationToken newAuthentication =

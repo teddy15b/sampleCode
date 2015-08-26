@@ -1,5 +1,6 @@
 package spring.security.boot.mongodb.security;
 
+import java.util.Base64;
 import java.util.Optional;
 
 import javax.crypto.Cipher;
@@ -8,10 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 /*
  * @author Teddy
@@ -38,7 +36,7 @@ public class AesService {
     cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
     byte[] encrypted = cipher.doFinal(sSrc.getBytes());
 
-    return Optional.of(new BASE64Encoder().encode(encrypted));// 此處使用BASE64做轉碼功能，同時能起到2次加密的作用。
+    return Optional.of(Base64.getEncoder().encodeToString(encrypted));
   }
 
   public static Optional<String> Decrypt(String sSrc, String sKey) throws Exception {
@@ -56,8 +54,8 @@ public class AesService {
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
     IvParameterSpec iv = new IvParameterSpec("0102030405060708".getBytes());
     cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
-    byte[] encrypted1 = new BASE64Decoder().decodeBuffer(sSrc);
-    byte[] original = cipher.doFinal(encrypted1);
+    byte[] encryptedAES = Base64.getDecoder().decode(sSrc);
+    byte[] original = cipher.doFinal(encryptedAES);
     String originalString = new String(original);
     return Optional.of(originalString);
   }
