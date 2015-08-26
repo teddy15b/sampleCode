@@ -59,6 +59,7 @@ public class Account implements UserDetails, CredentialsContainer {
     this.enabled = enabled;
   }
 
+  @JsonIgnore  
   public String getId() {
     return id;
   }
