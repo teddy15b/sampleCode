@@ -9,6 +9,7 @@ gradlew.bat
 build/
 **/build/
 **/bin/
+**/log/
 
 /out
 .DS_Store
